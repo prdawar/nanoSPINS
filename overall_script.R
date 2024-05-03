@@ -19,6 +19,7 @@ library(glmGamPoi)
 library(sctransform)
 library(gprofiler2)
 library(pheatmap)
+library(EnhancedVolcano)
 
 getwd()
 setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav/nanoSPINS_Pranav/")
@@ -1000,3 +1001,140 @@ C10_genes <- normalized_scRNAseq_SCT_long_new %>%
   distinct() %>%
   filter(Group == "C10")
 #write.csv(C10_genes, "C10_gene_list.csv")
+
+#nanoPOTS vs Direct sorting
+RNA_BCs_new <- annota %>% filter(!Cell.type == "NoCell") %>%
+  filter(gene_count > 1500) %>% 
+  arrange(Annotation)
+scRNAseq_rawdata_new <- select(test6, everything()) %>% select(RNA_BCs_new$Annotation) %>% as.sparse()
+C10SVEC_rawdata_new <- CreateSeuratObject(counts = scRNAseq_rawdata_new)
+Assays(C10SVEC_rawdata_new)
+DefaultAssay(C10SVEC_rawdata_new)
+C10SVEC_rawdata_new <- PercentageFeatureSet(C10SVEC_rawdata_new, pattern = "^mt-", col.name = "percent.mt")
+C10SVEC_rawdata_new$celltype <- RNA_BCs_new$Cell.type
+C10SVEC_rawdata_new$condition <- RNA_BCs_new$Condition
+VlnPlot(C10SVEC_rawdata_new, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, group.by = c("condition"), pt.size = 1)
+FeatureScatter(C10SVEC_rawdata_new, feature1 = "nCount_RNA", 
+               feature2 = "nFeature_RNA", 
+               pt.size = 1.5, 
+               group.by = "condition") + 
+  scale_y_continuous(limits = c(0, 20000), 
+                     breaks = seq(0, 20000, by = 5000)) +
+  scale_x_continuous(limits = c(0, 200000), 
+                     breaks = seq(0, 200000, by = 50000))
+ggsave("sequencing_depth_and_gene_identification.png", 
+       height = 8, 
+       width = 6, 
+       bg = "white")
+C10SVEC_rawdata_new <- SCTransform(C10SVEC_rawdata_new, vst.flavor = "v2", verbose = FALSE)
+C10SVEC_rawdata_new <- RunPCA(C10SVEC_rawdata_new, verbose = FALSE)
+VizDimLoadings(C10SVEC_rawdata_new, dims = 1:2, reduction = "pca")
+DimPlot(C10SVEC_rawdata_new, 
+        reduction = "pca", 
+        group.by = "celltype", 
+        pt.size = 2, 
+        alpha = 0.8, 
+        shape.by = "condition") + 
+  scale_y_continuous(limits = c(-30, 30), 
+                     breaks = seq(-30, 30, by = 10)) + 
+  scale_x_continuous(limits = c(-30, 30), 
+                     breaks = seq(-30, 30, by = 10)) + 
+  labs(title = "Experimental condition")
+DimHeatmap(C10SVEC_rawdata_new, dims = 1, balanced = TRUE)
+DimHeatmap(C10SVEC_rawdata_new, dims = 1:20, balanced = TRUE, assays = 'SCT')
+ElbowPlot(C10SVEC_rawdata_new)
+C10SVEC_rawdata_new <- FindNeighbors(C10SVEC_rawdata_new, dims = 1:30) ##why dims = 1:4?
+C10SVEC_rawdata_new <- FindClusters(C10SVEC_rawdata_new,resolution = 1, verbose = FALSE)
+C10SVEC_rawdata_new <- RunUMAP(C10SVEC_rawdata_new, dims = 1:5)
+DimPlot(C10SVEC_rawdata_new, 
+        label = FALSE, 
+        reduction = "umap",
+        shape.by = "celltype",
+        pt.size = 2)
+#ggsave("UMAP_scRNAseq_rawdata_scT.png", width = 8, height = 6)
+
+normalized_scRNAseq_scT_NP_DS <- as.data.frame(as.matrix(GetAssayData(C10SVEC_rawdata_new, assay= 'SCT', slot = 'data')))
+meta_RNA_pca_new <- RNA_selected_samples_new %>% select(Cell.Barcode,Annotation,Cell.type, Condition)
+
+pca_RNA_new <- PCAtools::pca(normalized_scRNAseq_scT_NP_DS, scale = F, center = T)
+PCAtools::biplot(pca_RNA_new, x = "PC2", y =  "PC3", 
+                 lab = RNA_BCs_new$Cell.type, 
+                 colLegendTitle = "Cell-type",
+                 showLoadings = FALSE,
+                 labSize = 0, 
+                 drawConnectors = FALSE,
+                 legendPosition = "right",
+                 #encircle = TRUE, 
+                 ellipse = TRUE, 
+                 ellipseLevel = 0.95, 
+                 shape = RNA_BCs_new$Condition, 
+                 shapeLegendTitle = "Condition",
+                 xlim = c(-30, 30), 
+                 ylim = c(-30, 30))
+#ggsave("PCA_condition.png", width = 8, height = 6, bg = "white")
+
+technical_variation_markers <- FindMarkers(C10SVEC_rawdata_new, ident.1 = "nanoPOTS", ident.2 = "Direct_Sorting", test.use = "wilcox_limma")
+#write.csv(technical_variation_markers, file = "technical_variation_markers.csv")
+
+EnhancedVolcano(technical_variation_markers,
+                lab = rownames(technical_variation_markers),
+                x = 'avg_log2FC',
+                y = 'p_val_adj', 
+                pCutoff = 0.05, 
+                FCcutoff = 1, 
+                labSize = 0,
+                legendLabels=c('Not sig.',
+                               'Log (base 2) FC',
+                               'p-adj < 0.05',
+                               'p-adj < 0.05 & Log (base 2) FC'),
+                legendPosition = 'right',
+                legendLabSize = 12,
+                legendIconSize = 4,
+                cutoffLineType = 'twodash',
+                cutoffLineWidth = 1,
+                pointSize = 3, 
+                xlim = c(-10, 10), 
+                ylim = c(0, 50), 
+                title = "nanoPOTS vs Direct sorting", 
+                subtitle = NULL)
+#ggsave("condition_enhancedVolcano_plot.png", width = 8, height = 6, bg = "white")
+RNA_BCs_new_updated <- RNA_BCs_new %>%
+  select(Annotation, Cell.type, Condition) %>%
+  mutate(combined = paste(Cell.type, Condition, sep = "_"))
+colnames(RNA_BCs_new_updated) <- c("SampleID", "Cell.type", "Condition", "combined")
+
+corr_test <- normalized_scRNAseq_scT_NP_DS %>% 
+  rownames_to_column("gene") %>%
+  pivot_longer(!gene, names_to = "SampleID", 
+               values_to = "normalized_reads") %>%
+  select(SampleID, gene, normalized_reads) %>%
+  inner_join(RNA_BCs_new_updated, by = "SampleID") %>%
+  select(SampleID, gene, normalized_reads, Cell.type, combined) %>%
+  mutate(normalized_reads = ifelse(normalized_reads == 0, NA,
+                                   normalized_reads)) %>%
+  select(gene, normalized_reads, Cell.type, combined) %>%
+  filter(!is.na(normalized_reads)) %>%
+  group_by(gene, combined) %>%
+  add_count(name = "n") %>%
+  mutate(Avg = mean(normalized_reads)) %>%
+  filter(n > 1) %>%
+  select(gene, combined, Avg) %>%
+  distinct() %>%
+  pivot_wider(names_from = combined, values_from = Avg)
+
+correlation_matrix <- cor(corr_test[, -1], use = "pairwise.complete.obs") 
+heatmap_data <- as.matrix(correlation_matrix)
+colnames(heatmap_data) <- rownames(heatmap_data) <- colnames(
+  correlation_matrix)
+heatmap_colors <- colorRampPalette(rev(brewer.pal(9, "RdBu")))(100)
+heatmap_plot <- ggplot(data = melt(heatmap_data), 
+                       aes(Var2, Var1, fill = value)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = heatmap_colors, limits = c(-1, 1)) +
+  labs(x = "", y = "", fill = "Correlation") +
+  geom_text(data = melt(correlation_matrix), 
+            aes(x = Var2, y = Var1,
+                label = round(value, 2)),
+            color = "black", size = 4)
+heatmap_plot + theme_minimal(base_size = 14)
+#ggsave("correlation_condition.png", width = 12, height = 7, bg = "white")
