@@ -119,7 +119,7 @@ protein_input %>%
   geom_jitter(width = 0.2) +
   scale_y_continuous(limits = c(0,2000), 
                      breaks = seq(0,2000, by = 250)) +
-  geom_hline(yintercept = 1106.371, 
+  geom_hline(yintercept = 1105.926, 
              linetype = "dashed", 
              color = "blue", 
              linewidth = 1) +
@@ -258,12 +258,7 @@ protein_input %>%
   theme_minimal(base_size = 14)
 #ggsave("median_sample_intensities_C10_SVEC.png", width = 5, height = 4, bg = "white")
 
-median_group_intensities <- protein_input %>%
-  filter(!is.na(Intensity)) %>%
-  filter(Group != "Blank") %>%
-  select(Group, Intensity) %>%
-  group_by(Group) %>%
-  summarise(median = median(Intensity))
+#median_group_intensities <- protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>%   select(Group, Intensity) %>% group_by(Group) %>% summarise(median = median(Intensity))
 
 protein_input %>%
   filter(!is.na(Intensity)) %>%
@@ -311,8 +306,8 @@ length(unique(protein_input$SampleID)[grepl("Control", unique(protein_input$Samp
 #fifty_percent_cutoff <- protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>% group_by(Gene) %>% add_count(name = "n") %>% filter( n >= 96) %>% ungroup() %>% select(Gene) %>% distinct()
 #write.csv(fifty_percent_cutoff, file = "fifty_percent_cutoff.csv")
 
-#No_cutoff <- protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>% select(Gene, Group) %>% distinct()
-#write.csv(No_cutoff, file = "no_cutoff.csv")
+No_cutoff <- protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>% select(Gene) %>% distinct()
+write.csv(No_cutoff, file = "no_cutoff.csv")
 
 protein_input %>%
   filter(!is.na(Intensity)) %>%
@@ -367,26 +362,7 @@ protein_input_750wide %>%
   theme_minimal(base_size = 14) + ggtitle("scProteomics (normalized; non-imputed)")
 #ggsave("CVs.png", bg = "white", height = 4, width = 5)
 
-median_CVs <- protein_input_750wide %>%
-  rownames_to_column(var = "Gene") %>%
-  pivot_longer(!Gene, names_to = "SampleID", 
-               values_to = "Intensity") %>%
-  mutate(Group = case_when(grepl("C10", SampleID) ~ 
-                             "C10",
-                           grepl("SVEC", SampleID) ~ 
-                             "SVEC")) %>%
-  mutate(Batch = str_match(SampleID, "_\\s*(.*?)\\s*_")) %>%
-  mutate(Batch = Batch[,2]) %>%
-  filter(!is.na(Intensity)) %>%
-  group_by(Gene, Batch, Group) %>%
-  mutate(Intensity = 2^Intensity) %>%
-  mutate(Avg = mean(Intensity)) %>%
-  mutate(CV = (sd(Intensity)/(Avg))) %>%
-  filter(!is.na(CV)) %>%
-  distinct(Gene, CV, Group) %>% 
-  ungroup() %>%
-  group_by(Group) %>%
-  summarise(median = median(CV))
+#median_CVs <- protein_input_750wide %>% rownames_to_column(var = "Gene") %>% pivot_longer(!Gene, names_to = "SampleID", values_to = "Intensity") %>% mutate(Group = case_when(grepl("C10", SampleID) ~  "C10", grepl("SVEC", SampleID) ~ "SVEC")) %>% mutate(Batch = str_match(SampleID, "_\\s*(.*?)\\s*_")) %>% mutate(Batch = Batch[,2]) %>%  filter(!is.na(Intensity)) %>%  group_by(Gene, Batch, Group) %>%  mutate(Intensity = 2^Intensity) %>%  mutate(Avg = mean(Intensity)) %>%  mutate(CV = (sd(Intensity)/(Avg))) %>%  filter(!is.na(CV)) %>% distinct(Gene, CV, Group) %>% ungroup() %>%  group_by(Group) %>%  summarise(median = median(CV))
 
 protein_input_750wide_norm <- as.data.frame(median_normalization(as.matrix(protein_input_750wide)))
 sorted_colnames <- sort(colnames(protein_input_750wide_norm))
@@ -605,7 +581,7 @@ ggplot(df.plot, aes(x = V1, y = V2, color = Group)) +
         plot.background = element_rect(fill = "white"))+
   scale_color_manual(values = c("#F8766D", "#00BFC4"))
 #ggsave("umap_scProteomics.png", width = 8, height = 5, bg = "white")
-#write.csv(protein_input_impute, "nanoSPINS_protein_imputed_results102924.csv")
+write.csv(protein_input_impute, "nanoSPINS_protein_imputed_results102924.csv")
 
 #scRNA-seq data analysis
 annota <- read.delim("masterkey.txt")
@@ -759,7 +735,7 @@ df_normalized_counts %>%
                geom = "point",
                color = "black") +
   theme_minimal(base_size = 14)
-ggsave("Coefficient_of_variation_scRNAseq.png", width = 6, height = 4, bg =  "white")
+#ggsave("Coefficient_of_variation_scRNAseq.png", width = 6, height = 4, bg =  "white")
 
 median_CVs_RNA <- df_normalized_counts %>% 
   rownames_to_column(var = "Gene") %>%
@@ -880,7 +856,6 @@ PCAtools::biplot(pca_RNA_all, x = "PC1", y =  "PC2",
                  #encircle = TRUE, 
                  ellipse = TRUE, ellipseLevel = 0.90)
 #ggsave("scRNASeq_PCA_plot_nanoSPINSvsDirectsorting.png", width = 10, height =6, bg = "white")
-
 
 df_normalized_reads_direct_sorting <- df_normalized_counts_wide %>%
   rownames_to_column(var = "Gene") %>%
@@ -1023,7 +998,7 @@ C10_RNA_matrix <- correlation_matrix_new2[grep("C10", rownames(correlation_matri
 average_correlation_C10_all <- mean(C10_RNA_matrix[upper.tri(C10_RNA_matrix) | lower.tri(C10_RNA_matrix)])
 print(average_correlation_C10_all)
 
-png("cross_madality_correlation_plot.png", width = 2500, height = 2500, bg = "white", res = 300)
+#png("cross_madality_correlation_plot.png", width = 2500, height = 2500, bg = "white", res = 300)
 corrplot::corrplot(correlation_matrix_new, method = 'shade', diag = FALSE, order = 'original', tl.cex = 0.2) %>% corrplot::corrRect(c(1,70,161,218,301), lwd = 2, col = "red")
 dev.off()
 
@@ -1096,7 +1071,7 @@ VlnPlot(C10SVEC_rawdata,
         group.by = "celltype", 
         pt.size = 1)
 
-as.data.frame(C10SVEC_rawdata$percent.mt) %>% rownames_to_column(var = "SampleID") %>% mutate(celltype = case_when(str_detect(SampleID, "C10") ~ "C10", str_detect(SampleID, "SVEC") ~ "SVEC")) %>% group_by(celltype) %>% summarise(median(`C10SVEC_rawdata$percent.mt`))
+#as.data.frame(C10SVEC_rawdata$percent.mt) %>% rownames_to_column(var = "SampleID") %>% mutate(celltype = case_when(str_detect(SampleID, "C10") ~ "C10", str_detect(SampleID, "SVEC") ~ "SVEC")) %>% group_by(celltype) %>% summarise(median(`C10SVEC_rawdata$percent.mt`))
 
 C10SVEC_rawdata <- SCTransform(C10SVEC_rawdata, 
                                vst.flavor = "v2", 
@@ -1136,7 +1111,7 @@ C10SVEC_rawdata_C10markers_RNA <- FindMarkers(C10SVEC_rawdata,
                                            test.use = "wilcox_limma" ,
                                            # min.diff.pct = 0.2, 
                                            logfc.threshold = 0)
-write.csv(C10SVEC_rawdata_C10markers_RNA, file = "C10SVEC_rawdata_C10markers_RNA.csv")
+#write.csv(C10SVEC_rawdata_C10markers_RNA, file = "C10SVEC_rawdata_C10markers_RNA.csv")
 EVP1_RNAseq <- EnhancedVolcano(C10SVEC_rawdata_C10markers_RNA, 
                                lab = rownames(C10SVEC_rawdata_C10markers_RNA), 
                                x = 'avg_log2FC', 
@@ -1177,7 +1152,7 @@ C10SVEC_rawdata_C10markers_prot <- FindMarkers(C10SVEC_rawdata,
                                               test.use = "wilcox_limma" ,
                                               # min.diff.pct = 0.2, 
                                               logfc.threshold = 0)
-write.csv(C10SVEC_rawdata_C10markers_prot, file = "C10SVEC_rawdata_C10markers_prot.csv")
+#write.csv(C10SVEC_rawdata_C10markers_prot, file = "C10SVEC_rawdata_C10markers_prot.csv")
 EVP1_Prot <- EnhancedVolcano(C10SVEC_rawdata_C10markers_prot, 
                              lab = rownames(C10SVEC_rawdata_C10markers_prot), 
                              x = 'avg_log2FC', 
@@ -1406,3 +1381,34 @@ overlapping_genes_and_proteins <- genes_and_sampleID %>%
   mutate(celltype = case_when(str_detect(SampleID, "C10") ~ "C10", str_detect(SampleID, "SVEC") ~ "SVEC")) %>% 
   group_by(celltype) %>% 
   summarise(mean(n))
+
+#percent mitochondrial reads scRNAseq datasets (cut-offs qualified)
+RNA_input_all <- read.delim("SB22_12_PNNL_21.umicount.inex.all.tsv", 
+                        row.names = "Gene") %>% 
+  dplyr::select(one_of(RNA_selected_samples_new$Cell.Barcode))
+
+RNA_input_all <- read.csv("RNA_input_all.csv", row.names = 1) %>%
+  rownames_to_column(var = "gene_id") %>%
+  inner_join(., convert) %>% 
+  mutate(Avg = rowSums(.[2:303]/302)) %>% 
+  group_by(gene_name) %>% 
+  slice_max(Avg, n = 1, with_ties = F ) %>%
+  ungroup() %>%
+  column_to_rownames(var = "gene_name") %>% 
+  dplyr::select( -gene_id, -Avg)
+scRNAseq_rawdata_all <- RNA_input_all %>%
+  as.sparse()
+C10SVEC_rawdata_all <- CreateSeuratObject(counts = scRNAseq_rawdata_all, 
+                                      min.cells = 5, 
+                                      min.features = 1000)
+C10SVEC_rawdata_all <- PercentageFeatureSet(C10SVEC_rawdata_all, 
+                                        pattern = "^mt-", 
+                                        col.name = "percent.mt")
+C10SVEC_rawdata_all$celltype <- RNA_selected_samples_new$Cell.type
+VlnPlot(C10SVEC_rawdata_all, 
+        features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
+        ncol = 3, 
+        group.by = "celltype", 
+        pt.size = 1)
+percent_mt <- as.data.frame(C10SVEC_rawdata_all$percent.mt) %>% rownames_to_column(var = "SampleID") %>% mutate(celltype = case_when(str_detect(SampleID, "C10") ~ "C10", str_detect(SampleID, "SVEC") ~ "SVEC"))
+#write.csv(percent_mt, file = "percent_mt.csv")
