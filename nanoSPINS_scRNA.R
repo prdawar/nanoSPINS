@@ -24,7 +24,7 @@ library(reshape2)
 library(RColorBrewer)
 
 getwd()
-
+setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav")
 #scRNA-seq data analysis
 annota <- read.delim("masterkey.txt")
 annota %>% 

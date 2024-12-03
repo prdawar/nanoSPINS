@@ -24,6 +24,7 @@ library(reshape2)
 library(RColorBrewer)
 
 getwd()
+setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav")
 # scProteomics data analysis
 filter_prot <- read.csv("./filter.csv")
 peptide_input <- read.delim("../nanoSPINS_data/results_101624/tmt-report/abundance_peptide_GN.tsv") %>%

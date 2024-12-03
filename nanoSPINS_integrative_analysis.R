@@ -24,7 +24,7 @@ library(reshape2)
 library(RColorBrewer)
 
 getwd()
-
+setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav")
 #Data integration, multimodal analysis, and marker analysis
 RNA_input <- read.delim("SB22_12_PNNL_21.umicount.inex.all.tsv", 
                         row.names = "Gene") %>% 
