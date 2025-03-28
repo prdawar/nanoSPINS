@@ -25,14 +25,15 @@ library(RColorBrewer)
 
 getwd()
 setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav")
-load("../../../repos/nanoSPINS_data_scripts/nanoSPINS_proteome.RData")
-#scRNA-seq data analysis
+
+#scRNA-seq data analysis: R script for Figure 3 and Supplementary Figure 3
+#load("nanoSPINS_transcriptome.RData")
 
 annota <- read.delim("masterkey.txt")
-
 #annota %>% select(Cell.type, Condition, gene_count) %>% filter(!Cell.type == "NoCell") %>% #filter(Condition == "nanoPOTS") %>% group_by(Cell.type) %>%   ggplot() +  aes(x = reorder(Cell.type, gene_count), y = gene_count) +  geom_violin(aes(colour = Cell.type, fill = Cell.type), outlier.size = 0, width = 0.5) + stat_summary(fun.y="mean",color="black", geom = "point") + #geom_jitter(aes(colour = Cell.type), width = 0.25) + scale_y_continuous(limits = c(0,10000), breaks = seq(0,10000, by = 2000)) + ylab("Number of Genes Identified (n)") + xlab("cell_type") + ggtitle("scRNA-seq") + theme_minimal(base_size = 14)
 #ggsave("number_of_genes_identified_scRNAseq.png", width = 5, height = 4, bg = "white")
 
+#For supplementary Figure 3A
 annota %>% 
   select(Cell.type, Condition, gene_count) %>%
   filter(Cell.type != "NoCell") %>%
@@ -62,17 +63,20 @@ mean_genes_identified <- annota %>%
   group_by(Condition, Cell.type) %>%
   summarise(mean(gene_count))
 
+#For Supplementary Figure 3B
 annota %>% 
   select(Cell.Barcode, Cell.type, Condition,Total, 
          UMI_count, gene_count, Ratio_mapped) %>% 
   filter(Cell.type != "NoCell") %>% 
-  ggplot() + aes(x = UMI_count, y = gene_count, 
+  ggplot() + 
+  aes(x = UMI_count, y = gene_count, 
                  colour = Cell.type) + 
   geom_point() + 
   scale_x_continuous(limits = c(0, 200000), breaks = seq(0, 200000, by = 50000)) +
   scale_y_continuous(limits = c(0, 15000), breaks = seq(0, 15000, by = 5000)) + theme_minimal(base_size = 14)
 #ggsave("C:/Users/dawa726/UMI_count&gene_count.png", width = 6, height = 4, bg = "white")
 
+#For Supplementary Figure 3C
 annota %>% 
   select(Cell.Barcode, Cell.type, Condition,Total, 
          UMI_count, gene_count, Ratio_mapped) %>% 
@@ -107,6 +111,7 @@ RNA_selected_samples_new_test_sorted %>%
   group_by(Condition, Cell.type) %>%
   summarise(mean(gene_count))
 
+#For Figure 3A
 RNA_selected_samples_new_test_sorted %>% 
   select(Cell.type, Condition, gene_count) %>%
   filter(!Cell.type == "NoCell") %>%
@@ -131,11 +136,11 @@ RNA_selected_samples_new_test_sorted %>%
   filter(Cell.type != "NoCell") %>%
   #filter(Condition == "nanoPOTS") %>%
   group_by(Condition, Cell.type) %>%
-  summarise(mean(gene_count)) %>% 
-  view()
+  summarise(mean(gene_count))
 
 RNA_input_all_new <- read.delim("./SB22_12_PNNL_21.umicount.inex.all.tsv", 
-                        row.names = "Gene") %>% dplyr::select(one_of(RNA_selected_samples_new_test_sorted$Cell.Barcode))
+                                row.names = "Gene") %>% 
+  dplyr::select(one_of(RNA_selected_samples_new_test_sorted$Cell.Barcode))
 
 RNA_input_all_new2 <- RNA_input_all_new %>% 
   rownames_to_column(var = "gene_id") %>%
@@ -233,6 +238,7 @@ df_normalized_counts_1_CVs <- df_normalized_counts_1 %>%
   distinct(Gene, CV, method, Group) %>%
   filter(!is.na(CV))
 
+#For Figure 3C
 df_normalized_counts_1_CVs %>%
   filter(method == "directsorted") %>%
   ggplot()+
@@ -280,6 +286,7 @@ pca_RNA_1_NS <- PCAtools::pca(df_normalized_reads_nanoSPINS_1,
                            scale = F, 
                            center = T)
 
+#For Figure 3D
 PCAtools::biplot(pca_RNA_1_NS, x = "PC2", y =  "PC4", 
                  lab = RNA_BCs_NS$Cell.type,
                  showLoadings = FALSE,
@@ -328,7 +335,7 @@ df_normalized_reads_directsorted_1 <- replace(df_normalized_reads_directsorted_1
 pca_RNA_DS_1 <- PCAtools::pca(df_normalized_reads_directsorted_1, 
                               scale = F, 
                               center = T)
-
+#For Supplementary Figure 3F
 PCAtools::biplot(pca_RNA_DS_1, x = "PC2", y =  "PC3", 
                  lab = RNA_BCs_DS$Cell.type,
                  showLoadings = FALSE,
@@ -409,6 +416,8 @@ rownames(correlation_matrix) <- ifelse(
 
 hc <- hclust(dist(correlation_matrix))
 reordered_correlation_matrix <- correlation_matrix[hc$order, hc$order]
+
+#For Supplementary Figure 3G
 png("correlation_plot_scRNAseq_all_031725.png", width = 3000, height = 3000, bg = "white", res = 300)
 corrplot::corrplot(correlation_matrix, 
                    method = 'shade', 

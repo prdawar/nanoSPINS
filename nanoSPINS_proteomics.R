@@ -25,7 +25,10 @@ library(RColorBrewer)
 
 getwd()
 setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav")
-# scProteomics data analysis
+
+#scProteomics data analysis - R script for Figure 2 and Supplementary Figure 2
+#load("nanoSPINS_proteome.RData")
+#For Supplementary Figure 2A
 filter_prot <- read.csv("./filter.csv")
 peptide_input <- read.delim("./abundance_peptide_GN.tsv") %>%
   select(contains("C10")| contains("SVEC")|
@@ -91,6 +94,7 @@ mean_peptides_per_batch <- peptide_input %>%
 #unique_peptides_per_batch <- peptide_input %>%   filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>% mutate(Batch = str_match(SampleID, "_\\s*(.*?)\\s*_")) %>% mutate(Batch = Batch[,2]) %>% select(Peptide, Batch) %>% unique() %>% group_by(Batch) %>% ## Can add Batch for studying batch effects add_count(name = "n") %>% ungroup() %>% select(Batch, n) %>% distinct(Batch, n) %>% ungroup()
 #write.csv(unique_peptides_per_batch, file = "unique_peptides_per_batch.csv")
 
+# For Supplementary Figure 2B
 protein_input <- read.delim("./abundance_protein_GN.tsv") %>%
   select(contains("C10")| contains("SVEC")| contains("Control") | 
            contains ("Index") | contains("Gene")) %>%
@@ -150,9 +154,31 @@ mean_proteins_per_batch <- protein_input %>%
   mutate(mean2 = mean(mean)) %>%
   select(mean2) %>% unique()
 
+#For Supplementary Figure 2c
+protein_input %>%
+  filter(!is.na(Intensity)) %>%
+  #filter(Group != "Blank") %>%
+  group_by(SampleID) %>%  
+  add_count(name = "n") %>% 
+  select(SampleID, Group, n) %>% 
+  distinct(SampleID, Group, n) %>%
+  ggplot()+
+  aes(x = fct_reorder(Group, n), y = n)+
+  geom_boxplot(aes(colour = Group), outlier.size = -1, width = 0.45, na.rm = TRUE) +
+  geom_jitter(aes(colour = Group), width = 0.2, na.rm = TRUE) +
+  stat_summary(fun.y="mean",color="black", shape=4) +
+  scale_y_continuous(limits = c(0,1500), breaks = seq(0,1500, by = 250)) +
+  scale_colour_manual(values = c("Blank" = "black", "C10" = "#F8766D", "SVEC" = "#00BFC4"))+
+  ylab("Number of Proteins Identified (n)")+
+  xlab("cell_type")+ 
+  ggtitle("scProteomics")+
+  theme_minimal(base_size = 14)
+#ggsave("./number_of_proteins_identified_Blank_C10_SVEC.png", width = 8, height = 4, bg = "white")
+
 #unique_proteins_per_batch <- protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>% mutate(Batch = str_match(SampleID, "_\\s*(.*?)\\s*_")) %>% mutate(Batch = Batch[,2]) %>% select(Gene, Batch) %>%   unique() %>% group_by(Batch) %>% add_count(name = "n") %>% ungroup() %>%  select(Batch, n) %>% distinct(Batch, n) %>% ungroup()
 #write.csv(unique_proteins_per_batch, file = "unique_proteins_per_batch.csv")
 
+#For Figure 2B
 protein_input %>%
   filter(!is.na(Intensity)) %>%
   filter(Group != "Blank") %>%
@@ -222,30 +248,11 @@ proteins_in_cell_lines <- protein_input %>%
 #  group_by(Group) %>%
 #  summarise(mean = mean(n)) %>% view()
 
-protein_input %>%
-  filter(!is.na(Intensity)) %>%
-  #filter(Group != "Blank") %>%
-  group_by(SampleID) %>%  
-  add_count(name = "n") %>% 
-  select(SampleID, Group, n) %>% 
-  distinct(SampleID, Group, n) %>%
-  ggplot()+
-  aes(x = fct_reorder(Group, n), y = n)+
-  geom_boxplot(aes(colour = Group), outlier.size = -1, width = 0.45, na.rm = TRUE) +
-  geom_jitter(aes(colour = Group), width = 0.2, na.rm = TRUE) +
-  stat_summary(fun.y="mean",color="black", shape=4) +
-  scale_y_continuous(limits = c(0,1500), breaks = seq(0,1500, by = 250)) +
-  scale_colour_manual(values = c("Blank" = "black", "C10" = "#F8766D", "SVEC" = "#00BFC4"))+
-  ylab("Number of Proteins Identified (n)")+
-  xlab("cell_type")+ 
-  ggtitle("scProteomics")+
-  theme_minimal(base_size = 14)
-#ggsave("./number_of_proteins_identified_Blank_C10_SVEC.png", width = 8, height = 4, bg = "white")
-
 #protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>% ggplot() + aes(x = Group, y = Intensity, fill = Group) + geom_violin(aes(colour = Group), width = 0.65)+ geom_jitter(aes(colour = Group), width = 0.15)+ stat_summary(fun = "median", geom = "crossbar", width = 0.15, colour = "black") + scale_y_continuous(limits = c(0,50), breaks = seq(0,50, by = 10)) + xlab("")+ ylab("log2(Protein Intensity)") + theme_minimal(base_size = 14)
 #ggsave("median_sample_intensities_C10_SVEC.png", width = 5, height = 4, bg = "white")
 #median_group_intensities <- protein_input %>% filter(!is.na(Intensity)) %>% filter(Group != "Blank") %>%   select(Group, Intensity) %>% group_by(Group) %>% summarise(median = median(Intensity))
 
+#For Figure 2C
 protein_input %>%
   filter(!is.na(Intensity)) %>%
   filter(Group != "Blank") %>%
@@ -505,6 +512,7 @@ protein_input_impute <- as.data.frame(protein_input_impute$KNN)
 
 #protein_input_impute %>% rownames_to_column(var = "Gene") %>% pivot_longer(!Gene, names_to = "SampleID", values_to = "Intensity") %>%  ggplot()+ aes(x = SampleID, y = Intensity) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8, face = "bold", colour = "black"))
 
+#For Figure 2D
 protein_input_impute %>%
   rownames_to_column(var = "Gene") %>%
   pivot_longer(!Gene, names_to = "SampleID", values_to = "Intensity") %>%
@@ -565,34 +573,34 @@ PCAtools::biplot(pca_protein_input_impute, x = "PC2", y =  "PC3",
                  ellipseLevel = 0.95)
 #ggsave("scProteomics_PCA_plot.png", width = 8, height = 4, bg = "white")
 
-scores_protein_input_impute <- as.data.frame(pca_protein_input_impute$rotated)
-set.seed(888)
-check <- uwot::umap(scores_protein_input_impute[, c(2,3,4,5)], 
-                    n_neighbors = 25, 
-                    n_epochs = 1000,
-                    bandwidth = 1.1, 
-                    ret_nn = T,
-                    metric = "euclidean"
-                    #scale = "none"
-                    #init  = "pca"
-                    # repulsion_strength = 1
-)
+#scores_protein_input_impute <- as.data.frame(pca_protein_input_impute$rotated)
+#set.seed(888)
+#check <- uwot::umap(scores_protein_input_impute[, c(2,3,4,5)], 
+#                    n_neighbors = 25, 
+#                    n_epochs = 1000,
+#                    bandwidth = 1.1, 
+#                    ret_nn = T,
+#                    metric = "euclidean"
+#scale = "none"
+#init  = "pca"
+# repulsion_strength = 1
+#)
 
-df.plot <- as.data.frame(check$embedding) %>%
-  rownames_to_column(var = "SampleID") %>%
-  inner_join(.,meta) %>%
-  mutate(Group = case_when(Group == "C10" ~ "C10",
-                           TRUE ~ "SVEC"))
+#df.plot <- as.data.frame(check$embedding) %>%
+#  rownames_to_column(var = "SampleID") %>%
+#  inner_join(.,meta) %>%
+#  mutate(Group = case_when(Group == "C10" ~ "C10",
+#TRUE ~ "SVEC"))
 
-ggplot(df.plot, aes(x = V1, y = V2, color = Group)) + 
-  geom_point(size = 3, alpha = 0.7)+
-  stat_ellipse()+
-  theme_minimal(base_size = 22)+
-  xlab("UMAP1")+
-  ylab("UMAP2")+
-  theme(panel.background = element_rect(fill = 'white'),
-        plot.background = element_rect(fill = "white"))+
-  scale_color_manual(values = c("#F8766D", "#00BFC4"))
+#ggplot(df.plot, aes(x = V1, y = V2, color = Group)) + 
+#  geom_point(size = 3, alpha = 0.7)+
+#  stat_ellipse()+
+#  theme_minimal(base_size = 22)+
+#  xlab("UMAP1")+
+#  ylab("UMAP2")+
+#  theme(panel.background = element_rect(fill = 'white'),
+#        plot.background = element_rect(fill = "white"))+
+#  scale_color_manual(values = c("#F8766D", "#00BFC4"))
 
 #ggsave("umap_scProteomics.png", width = 8, height = 5, bg = "white")
 #write.csv(protein_input_impute, "nanoSPINS_protein_imputed_results.csv")

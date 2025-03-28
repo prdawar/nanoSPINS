@@ -24,10 +24,13 @@ library(reshape2)
 library(RColorBrewer)
 library(gprofiler2)
 
+
 getwd()
 setwd("C:/Users/dawa726/OneDrive - PNNL/Desktop/nanoSPINS_Pranav")
+#scRNA-seq data analysis: R script for Figure 4 and Supplementary Figure 3
+#load("nanoSPINS_integrative_analysis.RData")
+convert <- read.delim("convert_names.txt")
 
-load("nanoSPINS_proteome_and_transcriptome.RData")
 #scProt-scRNA correlation analysis at sample level
 protein_input_750wide_norm_new <- protein_input_750wide_norm %>% 
   setNames(paste0(names(.), "_Prot")) %>% 
@@ -53,6 +56,8 @@ combined_new <- full_join(protein_input_750wide_norm_RNAmatch, df_normalized_cou
 correlation_matrix_RNA_prot <- cor(as.data.frame(lapply(combined_new, as.numeric)), method = "pearson", use = "pairwise.complete.obs")
 hc_RNA_prot <- hclust(dist(correlation_matrix_RNA_prot))
 reordered_correlation_matrix_RNA_prot <- correlation_matrix_RNA_prot[hc_RNA_prot$labels, hc_RNA_prot$labels]
+
+#For Figure 4C
 png("correlation_plot_crossmodality_RNA_prot.png", width = 3000, height = 3000, bg = "white", res = 300)
 corrplot::corrplot(reordered_correlation_matrix_RNA_prot, 
                    method = 'shade', 
@@ -91,11 +96,14 @@ test4 <- nanoSPINS_proteins_list
 test5 <- df_normalized_counts_1_nanoSPINS_protMatch %>% 
   select(gene) %>% 
   unique()
-write.csv(test4, "protein_list.csv")
-write.csv(test5, "gene_list.csv")
+#write.csv(test4, "protein_list.csv")
+#write.csv(test5, "gene_list.csv")
 
-cpm_distribution %>% group_by(overlapping) %>% summarize(median = median(mean_cpm))
-t.test(mean_cpm ~ overlapping, data = cpm_distribution)
+#For Supplementary Figure 4B
+cpm_distribution %>% 
+  group_by(overlapping) %>% 
+  summarize(median = median(mean_cpm))
+#t.test(mean_cpm ~ overlapping, data = cpm_distribution)
 cpm_distribution %>% 
   ggplot()+
   aes(x = overlapping, y = mean_cpm, fill = overlapping)+
@@ -111,7 +119,7 @@ cpm_distribution %>%
   theme_minimal(base_size = 14)
 #ggsave("median_cpm_values.png", width = 6, height = 4, bg = "white")
 
-
+#For Supplementary Figure 4A
 ggplot(cpm_distribution, 
        aes(x = mean_cpm, 
            fill = overlapping)) +
@@ -144,30 +152,62 @@ combined_corr_pair <- inner_join(nanoSPINS_protein_long, nanoSPINS_RNA_long) %>%
     grepl("SVEC", SampleID) ~ "SVEC",
     TRUE ~ "Other"))
 
-combined_corr_pair_C10 <- combined_corr_pair %>% filter(Group == "C10") %>% group_by(gene) %>% add_count(name = "Obs") %>% filter(Obs >= 4) %>% ungroup() %>% as_tibble()
-combined_corr_pair_SVEC <- combined_corr_pair %>% filter(Group == "SVEC") %>% group_by(gene) %>% add_count(name = "Obs") %>% filter(Obs >= 4) %>% ungroup() %>% as_tibble()
-combined_corr_pair_C10_nest <- group_by(combined_corr_pair_C10, gene) %>% nest()
-combined_corr_pair_SVEC_nest <- group_by(combined_corr_pair_SVEC, gene) %>% nest()
+combined_corr_pair_C10 <- combined_corr_pair %>% 
+  filter(Group == "C10") %>% 
+  group_by(gene) %>% 
+  add_count(name = "Obs") %>% 
+  filter(Obs >= 4) %>% 
+  ungroup() %>% 
+  as_tibble()
+combined_corr_pair_SVEC <- combined_corr_pair %>% 
+  filter(Group == "SVEC") %>% 
+  group_by(gene) %>% 
+  add_count(name = "Obs") %>% 
+  filter(Obs >= 4) %>% ungroup() %>% 
+  as_tibble()
+combined_corr_pair_C10_nest <- group_by(combined_corr_pair_C10, gene) %>%
+  nest()
+combined_corr_pair_SVEC_nest <- group_by(combined_corr_pair_SVEC, gene) %>% 
+  nest()
 
 cor_fun <- function(df) cor.test(df$Intensity, 
                                  df$cpm, 
                                  method = "pearson") %>% 
   broom::tidy()
 
-data_C10 <- combined_corr_pair_C10 %>% select(gene) %>% unique()
-test_C10 <- mutate(combined_corr_pair_C10_nest, model = map(data, cor_fun))
-corr_C10 <- dplyr::select(test_C10, -data) %>% unnest(cols = c(model))
-corr_C10 <- corr_C10 %>% ungroup() %>% mutate(FDR = p.adjust(`p.value`, method = "BH")) %>% mutate(Type2 = "mRNA-Protein_C10")
+data_C10 <- combined_corr_pair_C10 %>% 
+  select(gene) %>% 
+  unique()
+test_C10 <- mutate(combined_corr_pair_C10_nest, 
+                   model = map(data, cor_fun))
+corr_C10 <- dplyr::select(test_C10, -data) %>% 
+  unnest(cols = c(model))
+corr_C10 <- corr_C10 %>% 
+  ungroup() %>% 
+  mutate(FDR = p.adjust(`p.value`, method = "BH")) %>% 
+  mutate(Type2 = "mRNA-Protein_C10")
 corr_C10 %>% summarize(mean(estimate))
-data_SVEC <- combined_corr_pair_SVEC %>% select(gene) %>% unique()
-test_SVEC <- mutate(combined_corr_pair_SVEC_nest, model = map(data, cor_fun))
-corr_SVEC <- dplyr::select(test_SVEC, -data) %>% unnest(cols = c(model))
-corr_SVEC <- corr_SVEC %>% ungroup() %>% mutate(FDR = p.adjust(`p.value`, method = "BH")) %>% mutate(Type2 = "mRNA-Protein_SVEC")
+data_SVEC <- combined_corr_pair_SVEC %>% 
+  select(gene) %>% 
+  unique()
+test_SVEC <- mutate(combined_corr_pair_SVEC_nest, 
+                    model = map(data, cor_fun))
+corr_SVEC <- dplyr::select(test_SVEC, -data) %>% 
+  unnest(cols = c(model))
+corr_SVEC <- corr_SVEC %>% 
+  ungroup() %>% 
+  mutate(FDR = p.adjust(`p.value`, method = "BH")) %>% 
+  mutate(Type2 = "mRNA-Protein_SVEC")
 #filter(p.value < 0.05 & estimate < -0.5)
-corr_SVEC %>% summarize(mean(estimate))
+
+corr_SVEC %>% 
+  summarize(mean(estimate))
+
 combined_pearson <- full_join(corr_C10, corr_SVEC)
 
-corr_all %>% select(estimate) %>% summarise(mean = median(estimate))
+corr_all %>% 
+  select(estimate) %>% 
+  summarise(mean = median(estimate))
 
 #combined_pearson %>% ggplot() + aes(x = estimate, fill = Type2) + geom_histogram(alpha = 0.6, position = "identity", bins = 50) + xlab("Pearson Correlation (r)") + ylab("Gene-Protein Pair (n)") + theme_minimal(base_size = 16) + theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(), panel.border = element_blank(), axis.line = element_line()) + scale_fill_brewer(name = "", palette = 6, type = "qual", direction = -1) + geom_vline(xintercept = 0.022, col = "black") + theme(legend.position = "bottom", legend.direction = "vertical", legend.box = "horizontal")
 #ggsave("correlation_plot_RNA_prot.png", width = 6, height = 5, bg = "white")
@@ -219,6 +259,7 @@ corr_all <- corr_all %>%
   ungroup() %>%
   mutate(FDR = p.adjust(`p.value`, method = "BH"))
 
+#For Figure 4D
 corr_all %>%
   mutate(group = ifelse(p.value < 0.01, "significant", "non-significant")) %>% 
   ggplot(aes(x = estimate, 
@@ -246,7 +287,7 @@ nanoSPINS_proteins_list <- nanoSPINS_protein_long %>%
   select(gene) %>% 
   unique()
 
-GO_corr_all <- gost(query = corr_all_sig_genes_positive$gene,
+GO_corr_all <- gost(query = corr_all_sig_genes$gene,
                                                   organism = "mmusculus", 
                                                   ordered_query = F, 
                                                   multi_query = FALSE, 
@@ -260,16 +301,16 @@ GO_corr_all <- gost(query = corr_all_sig_genes_positive$gene,
                                                   numeric_ns = "",
                                                   sources = c("GO:CC"),
                                                   as_short_link = FALSE)
-flattened_GO_corr_all <- as.data.frame(GO_corr_all$result) %>%
-  mutate(across(everything(), ~ map_chr(., toString)))
-flattened_GO_corr_all <- flattened_GO_corr_all %>%
-  select(-evidence_codes, -intersection)
-flattened_GO_corr_all <- flattened_GO_corr_all %>% select(term_id, p_value, term_name)
+#flattened_GO_corr_all <- as.data.frame(GO_corr_all$result) %>%
+#  mutate(across(everything(), ~ map_chr(., toString)))
+#flattened_GO_corr_all <- flattened_GO_corr_all %>%
+# select(-evidence_codes, -intersection)
+#flattened_GO_corr_all <- flattened_GO_corr_all %>% select(term_id, p_value, term_name)
 
-corr_all_sig_genes_positive <- corr_all_sig_genes %>% 
-  filter(estimate >= 0.5)
-corr_all_sig_genes_negative <- corr_all_sig_genes %>% 
-  filter(estimate <= -0.5)
+#corr_all_sig_genes_positive <- corr_all_sig_genes %>% 
+#  filter(estimate >= 0.5)
+#corr_all_sig_genes_negative <- corr_all_sig_genes %>% 
+#  filter(estimate <= -0.5)
 
 ###
 #Data integration, multimodal analysis, and marker analysis
@@ -382,6 +423,7 @@ C10SVEC_rawdata <- RunUMAP(C10SVEC_rawdata,
                            reduction.name = "wnn.umap", 
                            reduction.key = "wnnUMAP_")
 
+#For Figure 4E
 p1 <- DimPlot(C10SVEC_rawdata, 
               group.by = "celltype",
               reduction = 'wnn.umap',
@@ -391,7 +433,7 @@ p1 <- DimPlot(C10SVEC_rawdata,
               pt.size = 3, 
               alpha = 0.75) + NoLegend()
 p1 + theme_cowplot(font_size = 16)
-ggsave("wnn.png", width = 6, height = 4)
+#ggsave("wnn.png", width = 6, height = 4)
 
 C10SVEC_rawdata <- RunUMAP(C10SVEC_rawdata, 
                            reduction = 'pca', 
@@ -454,6 +496,7 @@ heat2 <- DoHeatmap(C10SVEC_rawdata,
   scale_fill_gradientn(colours = rev(colorpalette)) + 
   guides(color="none")
 
+#For Figure 4F
 heat1 + heat2
 #ggsave("heatmap_integrative_analysis_032425.png", width = 14, height = 5)
 
@@ -476,6 +519,6 @@ C10SVEC_rawdata_all <- PercentageFeatureSet(C10SVEC_rawdata_all,
                                             pattern = "^mt-", 
                                             col.name = "percent.mt")
 percent_mt <- as.data.frame(C10SVEC_rawdata_all$percent.mt) %>% rownames_to_column(var = "SampleID") %>% mutate(celltype = case_when(str_detect(SampleID, "C10") ~ "C10", str_detect(SampleID, "SVEC") ~ "SVEC"))
-#write.csv(percent_mt, file = "percent_mt_032425.csv")
+#write.csv(percent_mt, file = "percent_mt_032425.csv")w
 
 
