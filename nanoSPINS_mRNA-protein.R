@@ -461,7 +461,7 @@ p3 <- DimPlot(C10SVEC_rawdata, group.by = "celltype",
               repel = TRUE, label.size = 5) + 
   NoLegend()
 
-features_rearrange <- c("Bst2", "H2-D1", "H2-K1", "Hmgb2", "Ifit3", "Isg15", "Lgals3", "Stmn1", "Actg1", "Col3a1", "Fn1", "Fscn1", "Gsta4", "Manf", "S100a4", "Thbs1", "Vim")
+features_rearrange <- c("Bst2", "H2-D1", "H2-K1", "Hmgb2", "Ifit3", "Isg15", "Lgals3", "Stmn1", "Actg1", "Col3a1", "Fn1", "Fscn1", "Gsta4", "Manf", "S100a4", "Thbs1", "Vim", "Col1A1")
 
 #feature_test <- c("Actb", "Actg1")
 #RidgePlot(C10SVEC_rawdata, features = feature_test, ncol = 2)
