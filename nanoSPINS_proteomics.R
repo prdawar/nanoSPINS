@@ -604,3 +604,25 @@ PCAtools::biplot(pca_protein_input_impute, x = "PC2", y =  "PC3",
 
 #ggsave("umap_scProteomics.png", width = 8, height = 5, bg = "white")
 #write.csv(protein_input_impute, "nanoSPINS_protein_imputed_results.csv")
+
+correlation_matrix <- cor(as.data.frame(lapply(protein_input_batch_corrected.1, as.numeric)), method = "pearson", use = "pairwise.complete.obs")
+hc <- hclust(dist(correlation_matrix))
+reordered_correlation_matrix <- correlation_matrix[hc$order, hc$order]
+png("correlation_plot_scRNAseq_all_031725.png", width = 3000, height = 3000, bg = "white", res = 300)
+corrplot::corrplot(correlation_matrix, 
+                   method = 'shade', 
+                   diag = FALSE, 
+                   tl.cex = 0.2, 
+                   order = 'alphabet', 
+                   col.lim = c(0, 1)) 
+dev.off()
+
+nanoSPINS_C10_Protein_matrix <- correlation_matrix[grep("C10", rownames(correlation_matrix)), grep("C10", colnames(correlation_matrix))]
+average_correlation_C10 <- mean(nanoSPINS_C10_Protein_matrix[upper.tri(nanoSPINS_C10_Protein_matrix) | lower.tri(nanoSPINS_C10_Protein_matrix)])
+print(average_correlation_C10)
+nanoSPINS_SVEC_Protein_matrix <- correlation_matrix[grep("SVEC", rownames(correlation_matrix)), grep("SVEC", colnames(correlation_matrix))]
+average_correlation_SVEC <- mean(nanoSPINS_SVEC_Protein_matrix[upper.tri(nanoSPINS_SVEC_Protein_matrix) | lower.tri(nanoSPINS_SVEC_Protein_matrix)])
+print(average_correlation_SVEC)
+
+average_correlation_overall <- mean(correlation_matrix[upper.tri(correlation_matrix) | lower.tri(correlation_matrix)])
+print(average_correlation_overall)
