@@ -4,6 +4,7 @@ AUTHORS:
 Pranav Dawar1, Lye Meng Markillie1, Sarah M. Williams1, Hugh D. Mitchell1, Johannes W. Bagnoli2, Joshua Cantlon-Bruce2, Anjali Seth2, Carter C. Bracken1, Ljiljana Paša-Tolić1, Ying Zhu1,3, James M. Fulcher1*
 
 AFFILIATIONS
+
 1Environmental Molecular Sciences Laboratory, Pacific Northwest National Laboratory, Richland, Washington 99354, United States
 
 2Cellenion SASU, 60 Avenue Rockefeller, Bâtiment BioSerra2, 69008 Lyon, France
